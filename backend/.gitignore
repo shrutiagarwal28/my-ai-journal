@@ -1,0 +1,17 @@
+# virtualenv — never commit dependencies
+.venv/
+
+# secrets — never commit credentials
+.env
+
+# Django runtime files
+db.sqlite3
+*.pyc
+__pycache__/
+*.pyo
+
+# Django collected static files (generated at deploy time)
+staticfiles/
+
+# macOS noise
+.DS_Store
