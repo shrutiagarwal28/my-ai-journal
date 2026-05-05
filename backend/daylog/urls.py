@@ -10,15 +10,14 @@ each app in later steps.
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
 urlpatterns = [
-    # Django's built-in admin UI — useful for inspecting data during development.
     path("admin/", admin.site.urls),
 
-    # App URL includes will be added here in Steps 3-4:
-    # path("api/auth/", include("users.urls")),
-    # path("api/entries/", include("entries.urls")),
-    # path("api/habits/", include("habits.urls")),
-    # path("api/dashboard/", include("entries.dashboard_urls")),
+    # include() means: "if the URL starts with this prefix, hand it off
+    # to that app's urls.py to finish matching"
+    path("api/auth/", include("users.urls")),
+    path("api/entries/", include("entries.urls")),
+    path("api/habits/", include("habits.urls")),
 ]

@@ -57,6 +57,8 @@ INSTALLED_APPS = [
     "users",                 # Custom User model — must be listed before entries/habits that FK to it
     "entries",               # JournalEntry + AI categorization service
     "habits",                # Habit + HabitLog
+    # Dev tools
+    "django_extensions",     # adds manage.py show_urls and other useful commands
 ]
 
 MIDDLEWARE = [
