@@ -22,3 +22,15 @@ export async function listEntries(page = 1) {
   if (!res.ok) throw new Error('Failed to load entries.');
   return res.json(); // { count, next, previous, results: [...] }
 }
+
+export async function getEntry(id) {
+  const res = await apiFetch(`/entries/${id}/`);
+  if (!res.ok) throw new Error('Entry not found.');
+  return res.json();
+}
+
+export async function reprocessEntry(id) {
+  const res = await apiFetch(`/entries/${id}/reprocess/`, { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to trigger reanalysis.');
+  return res.json();
+}

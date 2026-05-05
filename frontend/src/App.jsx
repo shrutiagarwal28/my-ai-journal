@@ -1,6 +1,9 @@
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
+import Dashboard from './pages/Dashboard';
 import Entries from './pages/Entries';
+import EntryDetail from './pages/EntryDetail';
+import Habits from './pages/Habits';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Today from './pages/Today';
@@ -39,6 +42,30 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Entries />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/entries/:id"
+          element={
+            <ProtectedRoute>
+              <EntryDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/habits"
+          element={
+            <ProtectedRoute>
+              <Habits />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
             </ProtectedRoute>
           }
         />

@@ -11,13 +11,13 @@ each app in later steps.
 
 from django.contrib import admin
 from django.urls import include, path
+from entries.views import DashboardView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
 
-    # include() means: "if the URL starts with this prefix, hand it off
-    # to that app's urls.py to finish matching"
     path("api/auth/", include("users.urls")),
     path("api/entries/", include("entries.urls")),
     path("api/habits/", include("habits.urls")),
+    path("api/dashboard/", DashboardView.as_view(), name="dashboard"),
 ]

@@ -1,3 +1,7 @@
+from datetime import date, timedelta
+
+from django.core.cache import cache
+from habits.models import HabitLog
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -58,3 +62,78 @@ class ReprocessView(APIView):
         # reachable and testable before the AI service exists.
         serializer = JournalEntrySerializer(entry)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class DashboardView(APIView):
+    """GET /api/dashboard/ — aggregated stats for the current user."""
+
+    def get(self, request) -> Response:
+        user = request.user
+        cache_key = f"dashboard_{user.id}"
+        cached = cache.get(cache_key)
+        if cached:
+            return Response(cached)
+
+        today = date.today()
+
+        # --- Streak ---
+        # Fetch all entry dates in one query, calculate streak in Python.
+        # One query instead of one per day — avoids N+1 as streak grows.
+        entry_dates = set(
+            JournalEntry.objects.filter(user=user).values_list("date", flat=True)
+        )
+        streak = 0
+        current = today
+        while current in entry_dates:
+            streak += 1
+            current -= timedelta(days=1)
+
+        # --- Mood last 7 days ---
+        mood_last_7_days = []
+        for i in range(6, -1, -1):
+            d = today - timedelta(days=i)
+            entry = JournalEntry.objects.filter(user=user, date=d).first()
+            mood_last_7_days.append({
+                "date": d.isoformat(),
+                "day": d.strftime("%a"),  # Mon, Tue, etc.
+                "mood_score": entry.mood_score if entry else None,
+            })
+
+        # --- Category breakdown this month ---
+        month_start = today.replace(day=1)
+        entries_this_month = JournalEntry.objects.filter(
+            user=user,
+            date__gte=month_start,
+            ai_categories__isnull=False,
+        )
+        category_breakdown: dict[str, int] = {}
+        for entry in entries_this_month:
+            for cat in (entry.ai_categories or []):
+                category_breakdown[cat] = category_breakdown.get(cat, 0) + 1
+
+        # --- Habits this week ---
+        week_start = today - timedelta(days=today.weekday())
+        logs = HabitLog.objects.filter(
+            habit__user=user,
+            date__gte=week_start,
+            date__lte=today,
+        ).select_related("habit")
+
+        habits_this_week: dict[str, dict] = {}
+        days_so_far = (today - week_start).days + 1
+        for log in logs:
+            name = log.habit.name
+            if name not in habits_this_week:
+                habits_this_week[name] = {"completed": 0, "total": days_so_far}
+            if log.completed:
+                habits_this_week[name]["completed"] += 1
+
+        data = {
+            "streak": streak,
+            "mood_last_7_days": mood_last_7_days,
+            "category_breakdown": category_breakdown,
+            "habits_this_week": habits_this_week,
+        }
+
+        cache.set(cache_key, data, timeout=300)  # cache for 5 minutes
+        return Response(data)
