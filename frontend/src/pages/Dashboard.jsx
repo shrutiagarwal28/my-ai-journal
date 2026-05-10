@@ -4,6 +4,8 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  RadialBar,
+  RadialBarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -123,6 +125,20 @@ export default function Dashboard() {
   const sortedCategories = Object.entries(data.category_breakdown).sort((a, b) => b[1] - a[1]);
   const maxCount         = sortedCategories[0]?.[1] || 1;
   const completedToday   = habits.filter((h) => habitLogs[h.id]?.completed).length;
+
+  const RING_COLOURS = ['#8b7355', '#a0845c', '#b8956a', '#c4a882', '#6b5a42', '#7d6548', '#d4b896'];
+  // Build wheel from the full habits list so rings always appear even with no logs yet.
+  // Cross-reference with habits_this_week for actual completion %; default to 0.
+  // Reversed because RadialBarChart draws the last array item as the outermost ring.
+  const habitWheelData = habits
+    .map((habit, i) => {
+      const weekStats = data.habits_this_week[habit.name];
+      const completion = weekStats && weekStats.total > 0
+        ? Math.round((weekStats.completed / weekStats.total) * 100)
+        : 0;
+      return { name: habit.name, completion, fill: RING_COLOURS[i % RING_COLOURS.length] };
+    })
+    .reverse();
 
   return (
     <div className="min-h-screen bg-paper">
@@ -348,6 +364,68 @@ export default function Dashboard() {
 
           </div>
         </div>
+
+        {/* ── Habits wheel ── */}
+        <Card>
+          <SectionLabel>Habits this week</SectionLabel>
+          {habits.length === 0 ? (
+            <p className="text-sm text-ink-muted italic" style={serif}>
+              No habits yet — <Link to="/habits" className="underline underline-offset-2">add some</Link> to see progress here.
+            </p>
+          ) : (
+            <div className="flex items-center gap-8">
+              <div className="shrink-0" style={{ width: 220, height: 220 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadialBarChart
+                    innerRadius="20%"
+                    outerRadius="95%"
+                    data={habitWheelData}
+                    startAngle={90}
+                    endAngle={-270}
+                  >
+                    <RadialBar
+                      background={{ fill: '#e2d9c8' }}
+                      dataKey="completion"
+                      cornerRadius={5}
+                    />
+                    <Tooltip
+                      formatter={(v, _name, props) => [`${v}%`, props.payload.name]}
+                      contentStyle={{
+                        fontSize: 11,
+                        borderRadius: 8,
+                        border: '1px solid #d4c9b0',
+                        backgroundColor: '#faf8f4',
+                        fontFamily: 'Georgia, serif',
+                      }}
+                    />
+                  </RadialBarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Legend with mini progress bars */}
+              <div className="flex-1 space-y-3">
+                {[...habitWheelData].reverse().map(({ name, completion, fill }) => (
+                  <div key={name} className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: fill }} />
+                    <span className="text-sm text-ink flex-1 truncate" style={serif}>{name}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="w-20 bg-ruled rounded-full h-1.5">
+                        <div
+                          className="h-1.5 rounded-full"
+                          style={{ width: `${completion}%`, backgroundColor: fill }}
+                        />
+                      </div>
+                      <span className="text-xs text-ink-muted w-8 text-right" style={serif}>
+                        {completion}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+
       </main>
     </div>
   );
