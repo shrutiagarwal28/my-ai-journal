@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+@theme {
+  --color-paper:      #f5f0e8;
+  --color-paper-card: #faf8f4;
+  --color-ink:        #2c1810;
+  --color-ink-muted:  #8b7355;
+  --color-ruled:      #e2d9c8;
+  --color-border:     #d4c9b0;
+}
+
 /* Global base styles */
 body {
   margin: 0;

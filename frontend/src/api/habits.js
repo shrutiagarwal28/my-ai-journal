@@ -23,3 +23,28 @@ export async function deleteHabit(id) {
   const res = await apiFetch(`/habits/${id}/`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete habit.');
 }
+
+export async function listHabitLogs(date) {
+  const res = await apiFetch(`/habits/logs/?date=${date}`);
+  if (!res.ok) throw new Error('Failed to load habit logs.');
+  const data = await res.json();
+  return data.results ?? data;
+}
+
+export async function createHabitLog(habitId, date, completed) {
+  const res = await apiFetch('/habits/logs/', {
+    method: 'POST',
+    body: JSON.stringify({ habit: habitId, date, completed }),
+  });
+  if (!res.ok) throw new Error('Failed to log habit.');
+  return res.json();
+}
+
+export async function updateHabitLog(logId, completed) {
+  const res = await apiFetch(`/habits/logs/${logId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ completed }),
+  });
+  if (!res.ok) throw new Error('Failed to update habit log.');
+  return res.json();
+}

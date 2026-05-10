@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { createHabit, deleteHabit, listHabits } from '../api/habits';
 import Nav from '../components/Nav';
 
+const serif = { fontFamily: "'Playfair Display', Georgia, serif" };
+
 const CATEGORIES = [
   'Health', 'Work', 'Learning', 'Relationships',
   'Finance', 'Creativity', 'Wellbeing', 'Other',
@@ -23,7 +25,6 @@ export default function Habits() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // New habit form state
   const [name, setName] = useState('');
   const [category, setCategory] = useState('Health');
   const [adding, setAdding] = useState(false);
@@ -50,7 +51,6 @@ export default function Habits() {
     setFormError('');
     try {
       const newHabit = await createHabit(name.trim(), category);
-      // Add to the top of the list without refetching everything
       setHabits((prev) => [newHabit, ...prev]);
       setName('');
       setCategory('Health');
@@ -64,7 +64,6 @@ export default function Habits() {
   async function handleDelete(id) {
     try {
       await deleteHabit(id);
-      // Remove from the list immediately — no need to refetch
       setHabits((prev) => prev.filter((h) => h.id !== id));
     } catch (err) {
       setError(err.message);
@@ -72,15 +71,15 @@ export default function Habits() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-paper">
       <Nav />
 
       <main className="max-w-2xl mx-auto px-6 py-10">
-        <h1 className="text-2xl font-bold text-stone-800 mb-8">Habits</h1>
+        <h1 className="text-2xl font-bold text-ink mb-8" style={serif}>Habits</h1>
 
         {/* Add habit form */}
-        <div className="bg-white border border-stone-200 rounded-2xl px-6 py-5 mb-6">
-          <h2 className="text-sm font-semibold text-stone-700 mb-4">Add a habit</h2>
+        <div className="bg-paper-card border border-border rounded-xl px-6 py-5 mb-6">
+          <h2 className="text-sm text-ink mb-4 italic" style={serif}>Add a habit</h2>
           <form onSubmit={handleAdd} className="flex flex-col gap-3">
             <div className="flex gap-3">
               <input
@@ -88,12 +87,14 @@ export default function Habits() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Morning run, Read 20 pages..."
-                className="flex-1 border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400"
+                className="flex-1 border border-border rounded-lg px-3 py-2 text-sm text-ink bg-paper focus:outline-none focus:ring-2 focus:ring-ink-muted/40"
+                style={serif}
               />
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400 bg-white"
+                className="border border-border rounded-lg px-3 py-2 text-sm text-ink bg-paper focus:outline-none focus:ring-2 focus:ring-ink-muted/40"
+                style={serif}
               >
                 {CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -102,22 +103,22 @@ export default function Habits() {
             </div>
 
             {formError && (
-              <p className="text-sm text-red-600">{formError}</p>
+              <p className="text-sm text-red-700">{formError}</p>
             )}
 
             <button
               type="submit"
               disabled={adding || !name.trim()}
-              className="self-start bg-stone-800 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-stone-700 disabled:opacity-40 transition-colors"
+              className="self-start bg-ink text-paper rounded-lg px-4 py-2 text-sm font-medium hover:bg-ink/80 disabled:opacity-40 transition-colors"
+              style={serif}
             >
               {adding ? 'Adding...' : 'Add habit'}
             </button>
           </form>
         </div>
 
-        {/* Habit list */}
         {loading && (
-          <p className="text-stone-400 text-sm">Loading habits...</p>
+          <p className="text-ink-muted text-sm italic" style={serif}>Loading habits...</p>
         )}
 
         {error && (
@@ -127,7 +128,7 @@ export default function Habits() {
         )}
 
         {!loading && habits.length === 0 && (
-          <p className="text-stone-400 text-sm text-center py-10">
+          <p className="text-ink-muted text-sm text-center py-10 italic" style={serif}>
             No habits yet — add one above.
           </p>
         )}
@@ -136,17 +137,17 @@ export default function Habits() {
           {habits.map((habit) => (
             <div
               key={habit.id}
-              className="bg-white border border-stone-200 rounded-xl px-5 py-4 flex items-center justify-between"
+              className="bg-paper-card border border-border rounded-xl px-5 py-4 flex items-center justify-between"
             >
               <div className="flex items-center gap-3">
-                <span className="text-stone-800 text-sm font-medium">{habit.name}</span>
+                <span className="text-ink text-sm font-medium" style={serif}>{habit.name}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CATEGORY_COLOURS[habit.category] || CATEGORY_COLOURS.Other}`}>
                   {habit.category}
                 </span>
               </div>
               <button
                 onClick={() => handleDelete(habit.id)}
-                className="text-stone-300 hover:text-red-500 transition-colors text-lg leading-none"
+                className="text-ink-muted hover:text-red-600 transition-colors text-lg leading-none"
                 title="Remove habit"
               >
                 ×

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   CartesianGrid,
   Line,
@@ -9,6 +10,12 @@ import {
   YAxis,
 } from 'recharts';
 import { getDashboard } from '../api/dashboard';
+import {
+  createHabitLog,
+  listHabitLogs,
+  listHabits,
+  updateHabitLog,
+} from '../api/habits';
 import Nav from '../components/Nav';
 
 const CATEGORY_COLOURS = {
@@ -22,23 +29,81 @@ const CATEGORY_COLOURS = {
   Other:         'bg-stone-100 text-stone-600',
 };
 
+const MOOD_EMOJI = { 1: '😞', 2: '😕', 3: '😐', 4: '🙂', 5: '😄' };
+const MOOD_LABEL = { 1: 'Rough', 2: 'Meh', 3: 'Okay', 4: 'Good', 5: 'Great' };
+
+const serif = { fontFamily: "'Playfair Display', Georgia, serif" };
+
+function localDateString(d) {
+  const y   = d.getFullYear();
+  const m   = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function SectionLabel({ children }) {
+  return (
+    <p className="text-xs text-ink-muted mb-3 italic" style={serif}>
+      {children}
+    </p>
+  );
+}
+
+function Card({ children, className = '' }) {
+  return (
+    <div className={`bg-paper-card border border-border rounded-xl px-5 py-5 shadow-sm ${className}`}>
+      {children}
+    </div>
+  );
+}
+
 export default function Dashboard() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [data, setData]           = useState(null);
+  const [habits, setHabits]       = useState([]);
+  const [habitLogs, setHabitLogs] = useState({});
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState('');
+
+  const today    = new Date();
+  const todayStr = localDateString(today);
+
+  const dayName   = today.toLocaleDateString('en-US', { weekday: 'long' });
+  const dayNum    = today.getDate();
+  const monthName = today.toLocaleDateString('en-US', { month: 'long' }).toUpperCase();
+  const year      = today.getFullYear();
 
   useEffect(() => {
-    getDashboard()
-      .then(setData)
+    Promise.all([getDashboard(), listHabits(), listHabitLogs(todayStr)])
+      .then(([dashboard, habitData, logs]) => {
+        setData(dashboard);
+        setHabits(habitData.results ?? habitData);
+        const logMap = {};
+        logs.forEach((log) => {
+          logMap[log.habit] = { logId: log.id, completed: log.completed };
+        });
+        setHabitLogs(logMap);
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
+  async function toggleHabit(habitId) {
+    const existing = habitLogs[habitId];
+    if (!existing) {
+      const log = await createHabitLog(habitId, todayStr, true);
+      setHabitLogs((prev) => ({ ...prev, [habitId]: { logId: log.id, completed: true } }));
+    } else {
+      const newCompleted = !existing.completed;
+      await updateHabitLog(existing.logId, newCompleted);
+      setHabitLogs((prev) => ({ ...prev, [habitId]: { ...existing, completed: newCompleted } }));
+    }
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-50">
+      <div className="min-h-screen bg-paper">
         <Nav />
-        <div className="flex items-center justify-center py-32 text-stone-400 text-sm">
+        <div className="flex items-center justify-center py-32 text-ink-muted text-sm italic" style={serif}>
           Loading...
         </div>
       </div>
@@ -47,132 +112,242 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-stone-50">
+      <div className="min-h-screen bg-paper">
         <Nav />
-        <div className="max-w-2xl mx-auto px-6 py-10 text-red-600 text-sm">{error}</div>
+        <div className="max-w-4xl mx-auto px-6 py-10 text-red-700 text-sm">{error}</div>
       </div>
     );
   }
 
-  const sortedCategories = Object.entries(data.category_breakdown)
-    .sort((a, b) => b[1] - a[1]);
-
-  const maxCategoryCount = sortedCategories[0]?.[1] || 1;
+  const todayMood        = data.mood_last_7_days[6];
+  const sortedCategories = Object.entries(data.category_breakdown).sort((a, b) => b[1] - a[1]);
+  const maxCount         = sortedCategories[0]?.[1] || 1;
+  const completedToday   = habits.filter((h) => habitLogs[h.id]?.completed).length;
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-paper">
       <Nav />
 
-      <main className="max-w-2xl mx-auto px-6 py-10 space-y-6">
-        <h1 className="text-2xl font-bold text-stone-800">Dashboard</h1>
+      <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
 
-        {/* Streak */}
-        <div className="bg-white border border-stone-200 rounded-2xl px-6 py-5 flex items-center gap-4">
-          <span className="text-4xl">🔥</span>
+        {/* ── Date header ── */}
+        <div className="flex items-end justify-between">
           <div>
-            <p className="text-3xl font-bold text-stone-800">{data.streak}</p>
-            <p className="text-sm text-stone-500">
-              {data.streak === 1 ? 'day streak' : 'day streak'}
-              {data.streak === 0 ? ' — write today to start one!' : ''}
-            </p>
+            <p className="text-sm text-ink-muted italic mb-1" style={serif}>{dayName}</p>
+            <h1 className="text-5xl font-bold text-ink leading-none tracking-tight" style={serif}>
+              {monthName} {dayNum}
+            </h1>
+            <p className="text-sm text-ink-muted mt-1" style={serif}>{year}</p>
+          </div>
+
+          {/* Streak — like a stamp on the page */}
+          <div className="flex items-center gap-3 bg-paper-card border border-border rounded-xl px-5 py-3 shadow-sm">
+            <span className="text-3xl">🔥</span>
+            <div>
+              <p className="text-2xl font-bold text-ink leading-none" style={serif}>{data.streak}</p>
+              <p className="text-xs text-ink-muted mt-0.5 italic" style={serif}>day streak</p>
+            </div>
           </div>
         </div>
 
-        {/* Mood chart */}
-        <div className="bg-white border border-stone-200 rounded-2xl px-6 py-5">
-          <h2 className="text-sm font-semibold text-stone-700 mb-4">Mood this week</h2>
-          {data.mood_last_7_days.every((d) => d.mood_score === null) ? (
-            <p className="text-sm text-stone-400">
-              No mood data yet — select a mood when writing your entries.
-            </p>
-          ) : (
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={data.mood_last_7_days}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
-                <XAxis
-                  dataKey="day"
-                  tick={{ fontSize: 12, fill: '#78716c' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={[1, 5]}
-                  ticks={[1, 2, 3, 4, 5]}
-                  tick={{ fontSize: 12, fill: '#78716c' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  formatter={(value) => [value ?? '—', 'Mood']}
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e7e5e4' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="mood_score"
-                  stroke="#292524"
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: '#292524' }}
-                  connectNulls={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+        {/* ── Main grid ── */}
+        <div className="grid grid-cols-5 gap-4">
 
-        {/* Category breakdown */}
-        <div className="bg-white border border-stone-200 rounded-2xl px-6 py-5">
-          <h2 className="text-sm font-semibold text-stone-700 mb-4">Top categories this month</h2>
-          {sortedCategories.length === 0 ? (
-            <p className="text-sm text-stone-400">
-              No categories yet — AI analysis will populate this once Step 5 is built.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {sortedCategories.map(([cat, count]) => (
-                <div key={cat} className="flex items-center gap-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium w-24 text-center shrink-0 ${CATEGORY_COLOURS[cat] || CATEGORY_COLOURS.Other}`}>
-                    {cat}
-                  </span>
-                  <div className="flex-1 bg-stone-100 rounded-full h-2">
-                    <div
-                      className="bg-stone-700 h-2 rounded-full transition-all"
-                      style={{ width: `${(count / maxCategoryCount) * 100}%` }}
-                    />
+          {/* Left column (3 / 5) */}
+          <div className="col-span-3 space-y-4">
+
+            {/* Today's mood */}
+            <Card>
+              <SectionLabel>Today's mood</SectionLabel>
+              {todayMood?.mood_score ? (
+                <div className="flex items-center gap-4">
+                  <span className="text-5xl">{MOOD_EMOJI[todayMood.mood_score]}</span>
+                  <div>
+                    <p className="text-xl font-semibold text-ink" style={serif}>
+                      {MOOD_LABEL[todayMood.mood_score]}
+                    </p>
+                    <p className="text-xs text-ink-muted italic mt-0.5" style={serif}>
+                      from today's entry
+                    </p>
                   </div>
-                  <span className="text-xs text-stone-400 w-6 text-right">{count}</span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-ink-muted italic" style={serif}>No mood logged today.</p>
+                  <Link
+                    to="/"
+                    className="text-xs text-ink-muted underline underline-offset-2 italic"
+                    style={serif}
+                  >
+                    Write today's entry →
+                  </Link>
+                </div>
+              )}
+            </Card>
 
-        {/* Habits this week */}
-        <div className="bg-white border border-stone-200 rounded-2xl px-6 py-5">
-          <h2 className="text-sm font-semibold text-stone-700 mb-4">Habits this week</h2>
-          {Object.keys(data.habits_this_week).length === 0 ? (
-            <p className="text-sm text-stone-400">
-              No habit logs yet — add habits and mark them complete to see progress here.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {Object.entries(data.habits_this_week).map(([name, stats]) => (
-                <div key={name} className="flex items-center gap-3">
-                  <span className="text-sm text-stone-700 w-36 truncate shrink-0">{name}</span>
-                  <div className="flex-1 bg-stone-100 rounded-full h-2">
-                    <div
-                      className="bg-stone-700 h-2 rounded-full transition-all"
-                      style={{ width: `${(stats.completed / stats.total) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-stone-400 w-10 text-right shrink-0">
-                    {stats.completed}/{stats.total}
+            {/* Habits today */}
+            <Card>
+              <div className="flex items-baseline justify-between mb-3">
+                <SectionLabel>Habits today</SectionLabel>
+                {habits.length > 0 && (
+                  <span className="text-xs text-ink-muted italic -mt-3" style={serif}>
+                    {completedToday} of {habits.length}
                   </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                )}
+              </div>
 
+              {habits.length === 0 ? (
+                <p className="text-sm text-ink-muted italic" style={serif}>
+                  No habits yet —{' '}
+                  <Link to="/habits" className="underline underline-offset-2">add some</Link>.
+                </p>
+              ) : (
+                <div>
+                  {habits.map((habit, i) => {
+                    const done = habitLogs[habit.id]?.completed || false;
+                    return (
+                      <button
+                        key={habit.id}
+                        onClick={() => toggleHabit(habit.id)}
+                        className={`w-full flex items-center gap-3 py-2.5 text-left group ${
+                          i < habits.length - 1 ? 'border-b border-ruled' : ''
+                        }`}
+                      >
+                        {/* Square checkbox — journal style */}
+                        <div
+                          className={`w-4 h-4 rounded-sm border-2 flex items-center justify-center shrink-0 transition-colors ${
+                            done
+                              ? 'bg-ink border-ink'
+                              : 'border-ink-muted group-hover:border-ink'
+                          }`}
+                        >
+                          {done && (
+                            <svg
+                              className="w-2.5 h-2.5 text-paper"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={3}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+
+                        <span
+                          className={`text-sm flex-1 transition-colors ${
+                            done ? 'text-ink-muted line-through' : 'text-ink'
+                          }`}
+                          style={serif}
+                        >
+                          {habit.name}
+                        </span>
+
+                        {habit.category && (
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
+                              CATEGORY_COLOURS[habit.category] || CATEGORY_COLOURS.Other
+                            }`}
+                          >
+                            {habit.category}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+
+          </div>
+
+          {/* Right column (2 / 5) */}
+          <div className="col-span-2 space-y-4">
+
+            {/* Mood chart */}
+            <Card>
+              <SectionLabel>Mood this week</SectionLabel>
+              {data.mood_last_7_days.every((d) => d.mood_score === null) ? (
+                <p className="text-xs text-ink-muted italic" style={serif}>No mood data yet.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={150}>
+                  <LineChart data={data.mood_last_7_days}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2d9c8" />
+                    <XAxis
+                      dataKey="day"
+                      tick={{ fontSize: 10, fill: '#8b7355', fontFamily: 'Georgia, serif' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      domain={[1, 5]}
+                      ticks={[1, 2, 3, 4, 5]}
+                      tick={{ fontSize: 10, fill: '#8b7355', fontFamily: 'Georgia, serif' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={18}
+                    />
+                    <Tooltip
+                      formatter={(v) => [v ?? '—', 'Mood']}
+                      contentStyle={{
+                        fontSize: 11,
+                        borderRadius: 8,
+                        border: '1px solid #d4c9b0',
+                        backgroundColor: '#faf8f4',
+                        fontFamily: 'Georgia, serif',
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="mood_score"
+                      stroke="#8b7355"
+                      strokeWidth={2}
+                      dot={{ r: 3, fill: '#8b7355' }}
+                      connectNulls={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </Card>
+
+            {/* Category breakdown */}
+            <Card>
+              <SectionLabel>Top categories this month</SectionLabel>
+              {sortedCategories.length === 0 ? (
+                <p className="text-xs text-ink-muted italic" style={serif}>
+                  No categories yet — AI analysis will populate this.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {sortedCategories.map(([cat, count]) => (
+                    <div key={cat} className="flex items-center gap-2">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium w-20 text-center shrink-0 ${
+                          CATEGORY_COLOURS[cat] || CATEGORY_COLOURS.Other
+                        }`}
+                      >
+                        {cat}
+                      </span>
+                      <div className="flex-1 bg-ruled rounded-full h-1.5">
+                        <div
+                          className="h-1.5 rounded-full transition-all"
+                          style={{
+                            width: `${(count / maxCount) * 100}%`,
+                            backgroundColor: '#a0845c',
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs text-ink-muted w-4 text-right shrink-0" style={serif}>
+                        {count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+          </div>
+        </div>
       </main>
     </div>
   );
