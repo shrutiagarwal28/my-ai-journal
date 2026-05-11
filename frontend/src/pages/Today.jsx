@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { createEntry } from '../api/entries';
 import Nav from '../components/Nav';
 
+const serif = { fontFamily: "'Playfair Display', Georgia, serif" };
+
 const MOOD_OPTIONS = [
   { value: 1, emoji: '😞', label: 'Very low' },
   { value: 2, emoji: '😕', label: 'Low' },
@@ -39,15 +41,15 @@ export default function Today() {
   });
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-paper">
       <Nav />
 
       <main className="max-w-2xl mx-auto px-6 py-10">
-        <p className="text-sm text-stone-400 mb-1">{today}</p>
-        <h1 className="text-2xl font-bold text-stone-800 mb-8">How was your day?</h1>
+        <p className="text-sm text-ink-muted mb-1 italic" style={serif}>{today}</p>
+        <h1 className="text-2xl font-bold text-ink mb-8" style={serif}>How was your day?</h1>
 
         <div className="mb-6">
-          <p className="text-sm font-medium text-stone-600 mb-3">How are you feeling?</p>
+          <p className="text-sm text-ink-muted mb-3 italic" style={serif}>How are you feeling?</p>
           <div className="flex gap-3">
             {MOOD_OPTIONS.map((mood) => (
               <button
@@ -56,8 +58,8 @@ export default function Today() {
                 title={mood.label}
                 className={`text-2xl w-12 h-12 rounded-xl border-2 transition-all ${
                   moodScore === mood.value
-                    ? 'border-stone-800 bg-stone-100 scale-110'
-                    : 'border-stone-200 bg-white hover:border-stone-400'
+                    ? 'border-ink bg-paper scale-110'
+                    : 'border-border bg-paper-card hover:border-ink-muted'
                 }`}
               >
                 {mood.emoji}
@@ -71,7 +73,7 @@ export default function Today() {
           onChange={(e) => setBody(e.target.value)}
           placeholder="Write about your day..."
           rows={12}
-          className="w-full border border-stone-200 rounded-2xl px-6 py-5 text-stone-800 text-base leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-stone-300 bg-white shadow-sm"
+          className="w-full border border-border rounded-xl px-6 py-5 text-ink text-base leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-ink-muted/40 bg-paper-card shadow-sm"
           style={{ fontFamily: 'Georgia, serif' }}
         />
 
@@ -89,7 +91,8 @@ export default function Today() {
         <button
           onClick={handleSave}
           disabled={!body.trim() || status === 'saving'}
-          className="mt-4 bg-stone-800 text-white rounded-xl px-6 py-3 text-sm font-medium hover:bg-stone-700 disabled:opacity-40 transition-colors"
+          className="mt-4 bg-ink text-paper rounded-xl px-6 py-3 text-sm font-medium hover:bg-ink/80 disabled:opacity-40 transition-colors"
+          style={serif}
         >
           {status === 'saving' ? 'Saving...' : 'Save + Analyse'}
         </button>

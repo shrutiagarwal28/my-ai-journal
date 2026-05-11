@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { listEntries } from '../api/entries';
 import Nav from '../components/Nav';
 
-// One consistent colour per category — matches what the AI returns
+const serif = { fontFamily: "'Playfair Display', Georgia, serif" };
+
 const CATEGORY_COLOURS = {
   Health:        'bg-green-100 text-green-700',
   Work:          'bg-blue-100 text-blue-700',
@@ -36,18 +37,18 @@ function EntryCard({ entry }) {
   return (
     <Link
       to={`/entries/${entry.id}`}
-      className="block bg-white border border-stone-200 rounded-2xl px-6 py-5 hover:border-stone-400 hover:shadow-sm transition-all"
+      className="block bg-paper-card border border-border rounded-xl px-6 py-5 hover:border-ink-muted hover:shadow-sm transition-all"
     >
       <div className="flex items-start justify-between gap-4 mb-2">
-        <span className="text-sm font-medium text-stone-500">{date}</span>
+        <span className="text-sm text-ink-muted italic" style={serif}>{date}</span>
         {entry.mood_score && (
           <span className="text-lg shrink-0">
-            {['😞','😕','😐','🙂','😄'][entry.mood_score - 1]}
+            {['😞', '😕', '😐', '🙂', '😄'][entry.mood_score - 1]}
           </span>
         )}
       </div>
 
-      <p className="text-stone-700 text-sm leading-relaxed mb-3" style={{ fontFamily: 'Georgia, serif' }}>
+      <p className="text-ink text-sm leading-relaxed mb-3" style={{ fontFamily: 'Georgia, serif' }}>
         {preview}
       </p>
 
@@ -86,17 +87,17 @@ export default function Entries() {
       }
     }
     load();
-  }, [page]); // re-runs whenever page changes
+  }, [page]);
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-paper">
       <Nav />
 
       <main className="max-w-2xl mx-auto px-6 py-10">
-        <h1 className="text-2xl font-bold text-stone-800 mb-6">Your journal</h1>
+        <h1 className="text-2xl font-bold text-ink mb-6" style={serif}>Your journal</h1>
 
         {loading && (
-          <p className="text-stone-400 text-sm">Loading entries...</p>
+          <p className="text-ink-muted text-sm italic" style={serif}>Loading entries...</p>
         )}
 
         {error && (
@@ -106,9 +107,13 @@ export default function Entries() {
         )}
 
         {!loading && !error && entries.length === 0 && (
-          <div className="text-center py-16 text-stone-400">
-            <p className="text-lg mb-2">No entries yet</p>
-            <Link to="/" className="text-sm text-stone-600 hover:underline">
+          <div className="text-center py-16 text-ink-muted">
+            <p className="text-lg mb-2 italic" style={serif}>No entries yet</p>
+            <Link
+              to="/"
+              className="text-sm text-ink-muted hover:text-ink underline underline-offset-2 italic"
+              style={serif}
+            >
               Write your first entry →
             </Link>
           </div>
@@ -120,21 +125,22 @@ export default function Entries() {
           ))}
         </div>
 
-        {/* Pagination */}
         {(hasPrev || hasNext) && (
           <div className="flex justify-between mt-8">
             <button
               onClick={() => setPage((p) => p - 1)}
               disabled={!hasPrev}
-              className="text-sm text-stone-600 hover:text-stone-800 disabled:opacity-30 transition-colors"
+              className="text-sm text-ink-muted hover:text-ink disabled:opacity-30 transition-colors italic"
+              style={serif}
             >
               ← Newer
             </button>
-            <span className="text-sm text-stone-400">Page {page}</span>
+            <span className="text-sm text-ink-muted italic" style={serif}>Page {page}</span>
             <button
               onClick={() => setPage((p) => p + 1)}
               disabled={!hasNext}
-              className="text-sm text-stone-600 hover:text-stone-800 disabled:opacity-30 transition-colors"
+              className="text-sm text-ink-muted hover:text-ink disabled:opacity-30 transition-colors italic"
+              style={serif}
             >
               Older →
             </button>

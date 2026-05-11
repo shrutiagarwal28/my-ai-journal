@@ -23,3 +23,39 @@ export async function deleteHabit(id) {
   const res = await apiFetch(`/habits/${id}/`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete habit.');
 }
+
+export async function listHabitLogs(date) {
+  const res = await apiFetch(`/habits/logs/?date=${date}`);
+  if (!res.ok) throw new Error('Failed to load habit logs.');
+  const data = await res.json();
+  return data.results ?? data;
+}
+
+export async function listHabitLogsForMonth(year, month) {
+  const m    = String(month).padStart(2, '0');
+  const days = new Date(year, month, 0).getDate(); // days in month
+  const gte  = `${year}-${m}-01`;
+  const lte  = `${year}-${m}-${String(days).padStart(2, '0')}`;
+  const res  = await apiFetch(`/habits/logs/?date_gte=${gte}&date_lte=${lte}`);
+  if (!res.ok) throw new Error('Failed to load monthly habit logs.');
+  const data = await res.json();
+  return data.results ?? data;
+}
+
+export async function createHabitLog(habitId, date, completed) {
+  const res = await apiFetch('/habits/logs/', {
+    method: 'POST',
+    body: JSON.stringify({ habit: habitId, date, completed }),
+  });
+  if (!res.ok) throw new Error('Failed to log habit.');
+  return res.json();
+}
+
+export async function updateHabitLog(logId, completed) {
+  const res = await apiFetch(`/habits/logs/${logId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ completed }),
+  });
+  if (!res.ok) throw new Error('Failed to update habit log.');
+  return res.json();
+}

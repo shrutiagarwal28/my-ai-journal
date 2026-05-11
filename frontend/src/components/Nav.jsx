@@ -1,6 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
+const serif = { fontFamily: "'Playfair Display', Georgia, serif" };
+
 export default function Nav() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -11,29 +13,30 @@ export default function Nav() {
   }
 
   return (
-    <header className="border-b border-stone-200 bg-white px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+    <header className="border-b border-border bg-paper-card px-6 py-4 flex items-center justify-between sticky top-0 z-10">
       <div className="flex items-center gap-6">
-        <span className="font-bold text-stone-800 text-lg">DayLog</span>
+        <span className="font-bold text-ink text-lg" style={serif}>DayLog</span>
         <nav className="flex gap-4 text-sm">
-          <Link to="/" className="text-stone-500 hover:text-stone-800 transition-colors">
+          <Link to="/" className="text-ink-muted hover:text-ink transition-colors italic" style={serif}>
             Today
           </Link>
-          <Link to="/entries" className="text-stone-500 hover:text-stone-800 transition-colors">
+          <Link to="/entries" className="text-ink-muted hover:text-ink transition-colors italic" style={serif}>
             Entries
           </Link>
-          <Link to="/habits" className="text-stone-500 hover:text-stone-800 transition-colors">
+          <Link to="/habits" className="text-ink-muted hover:text-ink transition-colors italic" style={serif}>
             Habits
           </Link>
-          <Link to="/dashboard" className="text-stone-500 hover:text-stone-800 transition-colors">
+          <Link to="/dashboard" className="text-ink-muted hover:text-ink transition-colors italic" style={serif}>
             Dashboard
           </Link>
         </nav>
       </div>
       <div className="flex items-center gap-4">
-        <span className="text-sm text-stone-400">Hi, {user?.username}</span>
+        <span className="text-sm text-ink-muted italic" style={serif}>Hi, {user?.username}</span>
         <button
           onClick={handleLogout}
-          className="text-sm text-stone-500 hover:text-stone-800 transition-colors"
+          className="text-sm text-ink-muted hover:text-ink transition-colors italic"
+          style={serif}
         >
           Log out
         </button>
