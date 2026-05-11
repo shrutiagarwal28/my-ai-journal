@@ -36,8 +36,12 @@ class HabitDetailView(generics.RetrieveUpdateDestroyAPIView):
         # instead of updating every column. Safer and faster for a single-field change.
 
 
-class HabitLogListView(generics.ListAPIView):
+class HabitLogListView(generics.ListCreateAPIView):
     serializer_class = HabitLogSerializer
+    # No pagination — habit logs per user are small enough (hundreds, not millions)
+    # that returning them all at once is fine. The wheel chart needs the full month
+    # in a single request, and paginating would require multiple round-trips.
+    pagination_class = None
 
     def get_queryset(self):
         # habit__user is a double-underscore traversal across the FK:
@@ -45,14 +49,18 @@ class HabitLogListView(generics.ListAPIView):
         qs = HabitLog.objects.filter(
             habit__user=self.request.user
         ).select_related("habit")
-        # select_related("habit") tells Django to JOIN habits_habit into this
-        # query so habit.name is available without a second query per log row.
-        # Without this, serializing 50 logs fires 51 queries (the N+1 problem).
 
-        # Optional date filter: GET /api/habits/logs/?date=2026-05-04
-        date_param = self.request.query_params.get("date")
-        if date_param:
-            qs = qs.filter(date=date_param)
+        date     = self.request.query_params.get("date")
+        date_gte = self.request.query_params.get("date_gte")
+        date_lte = self.request.query_params.get("date_lte")
+
+        if date:
+            qs = qs.filter(date=date)
+        if date_gte:
+            qs = qs.filter(date__gte=date_gte)
+        if date_lte:
+            qs = qs.filter(date__lte=date_lte)
+
         return qs
 
 
