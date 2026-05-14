@@ -1,6 +1,6 @@
 # How I Want to Learn
 
-This is a portfolio project I will use to prepare for backend interviews. I need to deeply understand every piece I write. Treat this as pair programming with a teacher, not autonomous code generation.
+This is a portfolio project I will use to prepare for backend interviews. I need to deeply understand every piece I write. Treat this as pair programming with a teacher, not autonomous code generation. Quiz me where the concept is not straightforward
 
 ## Teaching Protocol — apply this throughout the entire build
 
